@@ -55,7 +55,18 @@ PNG grayscale(PNG image) {
  * @return The image with a spotlight.
  */
 PNG createSpotlight(PNG image, int centerX, int centerY) {
-
+  for (unsigned x = 0; x < image.width(); x++) {
+    for (unsigned y = 0; y < image.height(); y++) {
+      HSLAPixel *pixel = image.getPixel(x, y);
+      
+      double dist = sqrt((x-centerX)*(x-centerX)+(y-centerY)*(y-centerY));
+      if (dist > 200) {
+        pixel->l = 0;
+      } else{
+        pixel->l = pixel->l - 0.005*dist*pixel->l;
+      }
+    }    
+  }
   return image;
 }
 
@@ -71,7 +82,15 @@ PNG createSpotlight(PNG image, int centerX, int centerY) {
  * @return The UBCify'd image.
 **/
 PNG ubcify(PNG image) {
-
+  for (unsigned x = 0; x < image.width(); x++) {
+        for (unsigned y = 0; y < image.height(); y++) {
+            HSLAPixel *pixel = image.getPixel(x, y);
+            if (pixel->h <= 40)
+                pixel->h = 40;
+            else
+                pixel->h = 210;
+        }
+    }
   return image;
 }
 
@@ -89,7 +108,16 @@ PNG ubcify(PNG image) {
 * @return The watermarked image.
 */
 PNG watermark(PNG firstImage, PNG secondImage) {
-
+    for (unsigned x = 0; x < secondImage.width(); x++) {
+        for (unsigned y = 0; y < secondImage.height(); y++) {
+            HSLAPixel *firstPixel = firstImage.getPixel(x, y);
+            HSLAPixel *secondPixel = secondImage.getPixel(x, y);
+            if (secondPixel->l == 1) {
+                firstPixel->l += 0.2;
+                if (firstPixel->l > 1) firstPixel->l = 1;
+            }    
+        }
+    }
   return firstImage;
 }
 
