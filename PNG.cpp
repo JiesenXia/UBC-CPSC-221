@@ -2,12 +2,15 @@
  * @file PNG.cpp
  * Implementation of a simple PNG class using HSLAPixels and the lodepng PNG library.
  *
- * @author CS 221: Data Structures
+ * @author CS 225: Data Structures
+ * @version 2018r1
  */
 
 #include <iostream>
 #include <string>
 #include <algorithm>
+#include <functional>
+#include <cassert>
 #include "lodepng/lodepng.h"
 #include "PNG.h"
 #include "RGB_HSL.h"
@@ -16,7 +19,7 @@ namespace cs221util {
   void PNG::_copy(PNG const & other) {
     // Clear self
     delete[] imageData_;
-    
+
     // Copy `other` to self
     width_ = other.width_;
     height_ = other.height_;
@@ -52,37 +55,47 @@ namespace cs221util {
     return *this;
   }
 
-  bool PNG::operator== (PNG const & other) const {
-    return (imageData_ == other.imageData_);
+  bool PNG::operator==(PNG const & other) const {
+    if (width_ != other.width_) { return false; }
+    if (height_ != other.height_) { return false; }
+
+    for (unsigned i = 0; i < width_ * height_; i++) {
+      HSLAPixel & p1 = imageData_[i];
+      HSLAPixel & p2 = other.imageData_[i];
+      if (!(p1 == p2)) { 
+        cout << p1 << " " << p2 << endl; return false; }
+    }
+
+    return true;
   }
 
-  bool PNG::operator!= (PNG const & other) const {
+  bool PNG::operator!=(PNG const & other) const {
     return !(*this == other);
   }
 
-  HSLAPixel * PNG::getPixel(unsigned int x, unsigned int y) {
+  HSLAPixel * PNG::getPixel(unsigned int x, unsigned int y) const {
     if (width_ == 0 || height_ == 0) {
-      cerr << "ERROR: Call to cs221util::PNG::getPixel() made on an image with no pixels." << endl;
-      cerr << "     : Returning NULL." << endl;
-      return NULL;
+      cerr << "ERROR: Call to cs225::PNG::getPixel() made on an image with no pixels." << endl;
+      assert(width_ > 0);
+      assert(height_ > 0);
     }
 
     if (x >= width_) {
-      cerr << "WARNING: Call to cs221util::PNG::getPixel(" << x << "," << y << ") tries to access x=" << x
+      cerr << "WARNING: Call to cs225::PNG::getPixel(" << x << "," << y << ") tries to access x=" << x
           << ", which is outside of the image (image width: " << width_ << ")." << endl;
       cerr << "       : Truncating x to " << (width_ - 1) << endl;
       x = width_ - 1;
     }
 
     if (y >= height_) {
-      cerr << "WARNING: Call to cs221util::PNG::getPixel(" << x << "," << y << ") tries to access y=" << y
+      cerr << "WARNING: Call to cs225::PNG::getPixel(" << x << "," << y << ") tries to access y=" << y
           << ", which is outside of the image (image height: " << height_ << ")." << endl;
       cerr << "       : Truncating y to " << (height_ - 1) << endl;
       y = height_ - 1;
     }
-    
+
     unsigned index = x + (y * width_);
-    return imageData_ + index;
+    return &imageData_[index];
   }
 
   bool PNG::readFromFile(string const & fileName) {
@@ -144,11 +157,11 @@ namespace cs221util {
 
   unsigned int PNG::width() const {
     return width_;
-  } 
+  }
 
   unsigned int PNG::height() const {
     return height_;
-  } 
+  }
 
   void PNG::resize(unsigned int newWidth, unsigned int newHeight) {
     // Create a new vector to store the image data for the new (resized) image
@@ -159,7 +172,7 @@ namespace cs221util {
     for (unsigned x = 0; x < newWidth; x++) {
       for (unsigned y = 0; y < newHeight; y++) {
         if (x < width_ && y < height_) {
-          HSLAPixel *oldPixel = this->getPixel(x, y);
+          HSLAPixel * oldPixel = this->getPixel(x, y);
           HSLAPixel & newPixel = newImageData[ (x + (y * newWidth)) ];
           newPixel = *oldPixel;
         }
@@ -174,4 +187,28 @@ namespace cs221util {
     height_ = newHeight;
     imageData_ = newImageData;
   }
+
+  std::size_t PNG::computeHash() const {
+    std::hash<float> hashFunction;
+    std::size_t hash = 0;
+
+
+    for (unsigned x = 0; x < this->width(); x++) {
+      for (unsigned y = 0; y < this->height(); y++) {
+        HSLAPixel * pixel = this->getPixel(x, y);
+        hash = (hash << 1) + hash + hashFunction(pixel->h);
+        hash = (hash << 1) + hash + hashFunction(pixel->s);
+        hash = (hash << 1) + hash + hashFunction(pixel->l);
+        hash = (hash << 1) + hash + hashFunction(pixel->a);
+      }
+    }
+
+    return hash;
+  }
+
+  std::ostream & operator << ( std::ostream& os, PNG const& png ) {
+    os << "PNG(w=" << png.width() << ", h=" << png.height() << ", hash=" << std::hex << png.computeHash() << std::dec << ")";
+    return os;
+  }
+
 }

@@ -1,57 +1,33 @@
-TEST_PR = testPriority
-TEST_SQ = testStackQueue
-TEST_FILLS = testFills
-
-OBJS_COLORPICKERS = imageTileColorPicker.o negativeColorPicker.o censorColorPicker.o solidColorPicker.o rainbowColorPicker.o
-OBJS_MAIN = main.o
-OBJS_TEST_PR = testPriority.o priority.o
-OBJS_TEST_FILLS = testFills.o priority.o
-OBJS_TEST_SQ = testStackQueue.o
-OBJS_UTILS  = animation.o lodepng.o HSLAPixel.o PNG.o
-
-INCLUDE_PR = pixelpoint.h priority.h
-INCLUDE_SQ = stack.h queue.h stack.cpp queue.cpp
-INCLUDE_FILLS = pixelpoint.h priority.h filler.h filler.cpp imageTileColorPicker.h negativeColorPicker.h censorColorPicker.h solidColorPicker.h rainbowColorPicker.o
-INCLUDE_UTILS = cs221util/PNG.h cs221util/HSLAPixel.h cs221util/lodepng/lodepng.h
+EXEPTree = testPTree
+OBJS  = PNG.o HSLAPixel.o lodepng.o hue_utils.o testPTree.o ptree.o
 
 CXX = clang++
+CXXFLAGS = -stdlib=libc++ -std=c++1y -c -g -O0 -Wall -Wextra -pedantic
 LD = clang++
-CXXFLAGS = -std=c++1y -stdlib=libc++ -c -g -O0 
-# -Wall -Wextra -pedantic
-LDFLAGS = -std=c++1y -stdlib=libc++ -lc++abi -lpthread -lm
+LDFLAGS = -stdlib=libc++ -std=c++1y -lc++abi -lpthread -lm
 
-all: $(TEST_FILLS) $(TEST_SQ) $(TEST_PR)
+all : testPTree
 
-$(TEST_PR) : $(OBJS_TEST_PR) lodepng.o HSLAPixel.o PNG.o
-	$(LD) $^ $(LDFLAGS) -o $@
+$(EXEPTree) : $(OBJS)
+	$(LD) $(OBJS) $(LDFLAGS) -o $(EXEPTree)
 
-$(TEST_SQ) : $(OBJS_TEST_SQ)
-	$(LD) $^ $(LDFLAGS) -o $@
+testPTree.o : testPTree.cpp ptree.h ptree-private.h cs221util/PNG.h cs221util/HSLAPixel.h
+	$(CXX) $(CXXFLAGS) testPTree.cpp
 
-$(TEST_FILLS) : $(OBJS_COLORPICKERS) $(OBJS_TEST_FILLS) $(OBJS_UTILS)
-	$(LD) $^ $(LDFLAGS) -o $@
+ptree.o : ptree.cpp ptree.h ptree-private.h hue_utils.h
+	$(CXX) $(CXXFLAGS) -Wfloat-conversion ptree.cpp
 
-testPriority.o : testPriority.cpp $(INCLUDE_PR)
-	$(CXX) $(CXXFLAGS) $< -o $@
+PNG.o : cs221util/PNG.cpp cs221util/PNG.h cs221util/HSLAPixel.h cs221util/lodepng/lodepng.h
+	$(CXX) $(CXXFLAGS) cs221util/PNG.cpp
 
-testStackQueue.o : testStackQueue.cpp $(INCLUDE_SQ)
-	$(CXX) $(CXXFLAGS) $< -o $@
-
-testFills.o : testFills.cpp $(INCLUDE_FILLS) $(INCLUDE_PR) $(INCLUDE_SQ) $(INCLUDE_UTILS)
-	$(CXX) $(CXXFLAGS) $< -o $@
-
-# Pattern rules for object files
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) $< -o $@
-
-PNG.o : cs221util/PNG.cpp $(INCLUDE_UTILS)
-	$(CXX) $(CXXFLAGS) $< -o $@
-
-HSLAPixel.o : cs221util/HSLAPixel.cpp $(INCLUDE_UTILS)
-	$(CXX) $(CXXFLAGS) $< -o $@
+HSLAPixel.o : cs221util/HSLAPixel.cpp cs221util/HSLAPixel.h
+	$(CXX) $(CXXFLAGS) cs221util/HSLAPixel.cpp
 
 lodepng.o : cs221util/lodepng/lodepng.cpp cs221util/lodepng/lodepng.h
-	$(CXX) $(CXXFLAGS) $< -o $@
+	$(CXX) $(CXXFLAGS) cs221util/lodepng/lodepng.cpp
 
-clean:
-	rm -rf $(TEST_PR) $(TEST_SQ) $(TEST_FILLS) $(OBJS_DIR) *.o
+hue_utils.o : hue_utils.cpp hue_utils.h
+	$(CXX) $(CXXFLAGS) hue_utils.cpp
+
+clean :
+	-rm -f *.o $(EXEPTree)
